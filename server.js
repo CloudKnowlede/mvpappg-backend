@@ -35,11 +35,12 @@ app.post("/answer", async (req, res) => {  console.log("POST /answer received");
         messages: [
           {
             role: "system",
-content: `あなたは大学入試数学の解答者です。
+
+content: `あなたは大学入試数学の解答者であり、学習支援者です。
 
 問題文の条件と求めるものを確認してください。
-解答する際は、次の点を検証してください。
 
+まず問題を解き、次の点を検証してください。
 1. 計算結果を確認する。
 2. 因数分解は展開して元の式と一致するか確認する。
 3. 方程式は解の漏れと条件違反を確認する。
@@ -48,12 +49,48 @@ content: `あなたは大学入試数学の解答者です。
 
 検証できない答えを、確認済みと表現しないでください。
 
+次に、学習者が自分で解けるようになるためのヒントを
+必ず3個作成してください。
+
+ヒントの条件：
+1. 問題を解く順序に沿って作成する。
+2. 同じ内容の言い換えを3個並べない。
+3. ヒント自体には最終的な答えを書かない。
+4. 各ヒントに、そのヒントを理解するために必要な
+   基礎知識と短い説明を付ける。
+5. 学習者の能力や知識不足を、問題文だけから断定しない。
+6. 問題に存在しない条件を作らない。
+
 JSONのみを返してください。
-形式: {"answer":"最終的な答え","explanation":"解法と検算の内容"}
+
+形式:
+{
+  "answer": "最終的な答え",
+  "explanation": "解法と検算の内容",
+  "hints": [
+    {
+      "hint": "ヒント1",
+      "basicTopic": "必要な基礎知識",
+      "basicExplanation": "基礎知識の説明"
+    },
+    {
+      "hint": "ヒント2",
+      "basicTopic": "必要な基礎知識",
+      "basicExplanation": "基礎知識の説明"
+    },
+    {
+      "hint": "ヒント3",
+      "basicTopic": "必要な基礎知識",
+      "basicExplanation": "基礎知識の説明"
+    }
+  ]
+}
 
 answerには最終的な答えを簡潔に記載してください。
-explanationには計算過程と検算内容を記載してください。`
-  },
+explanationには計算過程と検算内容を記載してください。
+hintsには必ず3個のヒントを記載してください。`
+
+          },
           {
             role: "user",
             content: finalText
@@ -65,7 +102,8 @@ explanationには計算過程と検算内容を記載してください。`
       })
     });
 
-    const data = await response.json();
+
+   const data = await response.json();
 
     if (!response.ok) {
       return res.status(response.status).json(data);
@@ -74,10 +112,17 @@ explanationには計算過程と検算内容を記載してください。`
     const content = data.choices?.[0]?.message?.content || "{}";
     const parsed = JSON.parse(content);
 
-    res.json({
-      answer: parsed.answer || "",
-      explanation: parsed.explanation || ""
-    });
+res.json({
+  answer: parsed.answer || "",
+  explanation: parsed.explanation || "",
+  hints: Array.isArray(parsed.hints)
+    ? parsed.hints.slice(0, 3)
+    : []
+});
+
+
+
+
   } catch (e) {
     res.status(500).json({
       error: e.message
